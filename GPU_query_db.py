@@ -203,3 +203,298 @@ def query_user_gpu_memory_realtime_usage(start_time, end_time, db_path="gpu_hist
     data["timestamp"] = pd.to_datetime(data["timestamp"]).dt.tz_localize("UTC").dt.tz_convert("Asia/Shanghai")
 
     return data
+
+
+def get_period_sample_interval(start_time, end_time):
+    """
+    获取指定时间段的采样间隔。
+
+    Args:
+        start_time (str): 起始时间，格式为 "YYYY-MM-DD HH:MM:SS"。
+        end_time (str): 终止时间，格式为 "YYYY-MM-DD HH:MM:SS"。
+
+    Returns:
+        int: 采样间隔。
+    """
+    # 根据时间段计算采样间隔
+    period_seconds = (end_time - start_time).total_seconds()
+
+    if period_seconds <= 3600:  # 小于 1 小时，采样间隔为 10 秒
+        interval = 30
+    elif period_seconds <= 86400:  # 1 小时到 1 天，采样间隔为 1 * (小时数//8 + 1) 分钟
+        interval = 60 * (period_seconds // 28800 + 1)
+    elif period_seconds <= 7 * 86400:  # 1 天到 7 天，采样间隔为 5 * 天数 分钟
+        interval = 300 * (period_seconds // 86400)
+    else:  # 超过 7 天，采样间隔为 1 小时
+        interval = 3600
+
+    return interval
+
+
+def query_gpu_history_usage(start_time, end_time, db_path="gpu_history.db", use_resample=False):
+    """
+    查询指定时间范围内的 GPU 使用情况，并进行间隔采样以减小数据量。
+
+    Args:
+        start_time (str): 起始时间，格式为 "YYYY-MM-DD HH:MM:SS"。
+        end_time (str): 终止时间，格式为 "YYYY-MM-DD HH:MM:SS"。
+        db_path (str): SQLite 数据库路径。
+        sample_interval (int): 每个 GPU 的间隔采样数量。
+
+    Returns:
+        pd.DataFrame: GPU 使用情况。
+    """
+    logger.trace(f"Querying GPU history usage from {start_time} to {end_time} in {db_path}")
+    conn = sqlite3.connect(db_path)
+
+    # 根据时间段计算采样间隔
+    interval = get_period_sample_interval(start_time, end_time)
+
+    # SQL 查询
+    query = f"""
+        WITH AlignedData AS (
+            SELECT
+                gpu_index,
+                -- 将时间戳对齐到采样间隔
+                DATETIME(FLOOR(UNIXEPOCH(timestamp) / {interval}) * {interval}, 'unixepoch') AS aligned_timestamp,
+                AVG(gpu_utilization) AS gpu_utilization,
+                MIN(gpu_utilization_min) AS gpu_utilization_min,
+                MAX(gpu_utilization_max) AS gpu_utilization_max,
+                AVG(used_memory) AS used_memory,
+                MIN(used_memory_min) AS used_memory_min,
+                MAX(used_memory_max) AS used_memory_max
+            FROM gpu_history
+            WHERE timestamp BETWEEN ? AND ?
+            GROUP BY gpu_index, aligned_timestamp
+        )
+        SELECT *
+        FROM AlignedData
+        ORDER BY aligned_timestamp
+    """
+    data = pd.read_sql_query(query, conn, params=(start_time, end_time))
+
+    conn.close()
+    logger.trace("Query GPU history usage completed")
+
+    # 将时间戳转换为 datetime 类型
+    data["timestamp"] = pd.to_datetime(data["aligned_timestamp"]).dt.tz_localize("UTC").dt.tz_convert("Asia/Shanghai")
+
+    # if use_resample and len(data) > 500:
+    #     freq = len(data) // 36 + 1
+    #     data = (
+    #         data.set_index("timestamp")
+    #         .groupby("gpu_index")
+    #         .resample(f"{freq}s")
+    #         .agg(
+    #         {
+    #             "gpu_utilization": "mean",
+    #             "gpu_utilization_min": lambda x: x.quantile(0.25),
+    #             "gpu_utilization_max": lambda x: x.quantile(0.75),
+    #             "used_memory": "mean",
+    #             "used_memory_min": lambda x: x.quantile(0.25),
+    #             "used_memory_max": lambda x: x.quantile(0.75),
+    #         }
+    #         )
+    #         .dropna(how='all')
+    #         .reset_index()
+    #     )
+
+    # 将显存相关字段转换为 GB
+    data["used_memory"] = data["used_memory"] / 0x40000000
+    data["used_memory_max"] = data["used_memory_max"] / 0x40000000
+    data["used_memory_min"] = data["used_memory_min"] / 0x40000000
+
+    return data
+
+
+def query_gpu_history_average_usage(start_time, end_time, db_path="gpu_history.db"):
+    """
+    查询指定时间范围内的 GPU 平均使用情况。
+
+    Args:
+        start_time (str): 起始时间，格式为 "YYYY-MM-DD HH:MM:SS"。
+        end_time (str): 终止时间，格式为 "YYYY-MM-DD HH:MM:SS"。
+        db_path (str): SQLite 数据库路径。
+
+    Returns:
+        pd.DataFrame: GPU 平均使用情况。
+    """
+    logger.trace(f"Querying GPU history average usage from {start_time} to {end_time} in {db_path}")
+    conn = sqlite3.connect(db_path)
+
+    # 查询 GPU 信息
+    query = """
+        SELECT 
+            gpu_index,
+            AVG(gpu_utilization) AS avg_gpu_utilization,
+            AVG(used_memory) AS avg_used_memory
+        FROM gpu_history
+        WHERE timestamp BETWEEN ? AND ?
+        GROUP BY gpu_index
+    """
+    data = pd.read_sql_query(query, conn, params=(start_time, end_time))
+    conn.close()
+    logger.trace("Query GPU history average usage completed")
+
+    # 将显存相关字段转换为 GB
+    data["avg_used_memory"] = data["avg_used_memory"] / 0x40000000
+
+    return data
+
+
+def query_gpu_user_history_list(start_time, end_time, db_path="gpu_history.db"):
+    """
+    查询指定时间范围内的用户列表。
+
+    Args:
+        start_time (str): 起始时间，格式为 "YYYY-MM-DD HH:MM:SS"。
+        end_time (str): 终止时间，格式为 "YYYY-MM-DD HH:MM:SS"。
+        db_path (str): SQLite 数据库路径。
+
+    Returns:
+        pd.DataFrame: 用户列表。
+    """
+    logger.trace(f"Querying GPU user history list from {start_time} to {end_time} in {db_path}")
+    conn = sqlite3.connect(db_path)
+
+    # 查询用户列表
+    query = """
+        SELECT DISTINCT user
+        FROM gpu_user_history
+        WHERE timestamp BETWEEN ? AND ?
+    """
+    data = pd.read_sql_query(query, conn, params=(start_time, end_time))
+    conn.close()
+    logger.trace("Query GPU user history list completed")
+
+    return data
+
+
+def query_gpu_user_history_usage(start_time, end_time, db_path="gpu_history.db", use_resample=False):
+    """
+    查询指定时间范围内的用户 GPU 使用情况，并进行间隔采样以减小数据量。
+
+    Args:
+        start_time (str): 起始时间，格式为 "YYYY-MM-DD HH:MM:SS"。
+        end_time (str): 终止时间，格式为 "YYYY-MM-DD HH:MM:SS"。
+        db_path (str): SQLite 数据库路径。
+
+    Returns:
+        pd.DataFrame: 用户 GPU 使用情况。
+    """
+    logger.trace(f"Querying GPU user history usage from {start_time} to {end_time} in {db_path}")
+    conn = sqlite3.connect(db_path)
+
+    # 根据时间段计算采样间隔
+    interval = get_period_sample_interval(start_time, end_time)
+
+    # SQL 查询
+    query = f"""
+        WITH AlignedData AS (
+            SELECT
+                user,
+                gpu_index,
+                -- 将时间戳对齐到采样间隔
+                DATETIME(FLOOR(UNIXEPOCH(timestamp) / {interval}) * {interval}, 'unixepoch') AS aligned_timestamp,
+                AVG(gpu_utilization) AS gpu_utilization,
+                AVG(used_memory) AS used_memory
+            FROM gpu_user_history
+            WHERE timestamp BETWEEN ? AND ?
+            GROUP BY user, gpu_index, aligned_timestamp
+        )
+        SELECT *
+        FROM AlignedData
+        ORDER BY aligned_timestamp
+    """
+    data = pd.read_sql_query(query, conn, params=(start_time, end_time))
+    conn.close()
+    logger.trace("Query GPU user history usage completed")
+
+    # 将时间戳转换为 datetime 类型
+    data["timestamp"] = pd.to_datetime(data["aligned_timestamp"]).dt.tz_localize("UTC").dt.tz_convert("Asia/Shanghai")
+    max_time = data["timestamp"].max()
+    min_time = data["timestamp"].min()
+
+    # if use_resample and len(data) > 1000:
+    #     freq = len(data) // 36 + 1
+    #     data = (
+    #         data.set_index("timestamp")
+    #         .groupby(["user", "gpu_index"])
+    #         .resample(f"{freq}s")
+    #         .mean()
+    #         .dropna()
+    #         .reset_index()
+    #         # .set_index("timestamp")
+    #     )
+
+    # 将显存相关字段转换为 GB
+    data["used_memory"] = data["used_memory"] / 0x40000000
+    # data["used_memory_max"] = data["used_memory_max"] / 0x40000000
+    # data["used_memory_min"] = data["used_memory_min"] / 0x40000000
+
+    # 按照'user'和'gpu_index'进行分组
+    grouped = data.groupby(["user", "gpu_index"])
+
+    user_gpu_history = {}
+    for (user, gpu_index), group in grouped:
+        end_time = group["timestamp"].max()
+
+        full_time_range = pd.date_range(
+            start=min_time - pd.Timedelta(seconds=interval) if min_time > start_time else min_time,
+            end=end_time + pd.Timedelta(seconds=interval) if end_time < max_time else end_time,
+            freq=f"{interval}s",
+        )
+        group = group.set_index("timestamp").reindex(full_time_range, fill_value=0).reset_index()
+        group.rename(columns={"index": "timestamp"}, inplace=True)
+
+        if user not in user_gpu_history:
+            user_gpu_history[user] = {}
+        user_gpu_history[user][gpu_index] = group
+
+    return user_gpu_history, pd.date_range(start=min_time, end=max_time, freq=f"{interval}s")
+
+
+def query_gpu_user_history_total_usage(start_time, end_time, db_path="gpu_history.db"):
+    logger.trace(f"Querying GPU user history total usage from {start_time} to {end_time} in {db_path}")
+    """
+    查询指定时间范围内的用户 GPU 总用量。
+
+    Args:
+        start_time (str): 起始时间，格式为 "YYYY-MM-DD HH:MM:SS"。
+        end_time (str): 终止时间，格式为 "YYYY-MM-DD HH:MM:SS"。
+        db_path (str): SQLite 数据库路径。
+
+    Returns:
+        pd.DataFrame: 用户 GPU 总用量。
+    """
+    conn = sqlite3.connect(db_path)
+
+    # 先查询总的历史记录数量作为总时间
+    query = """
+        SELECT COUNT(*) AS total_count
+        FROM gpu_history
+        WHERE timestamp BETWEEN ? AND ?
+    """
+
+    total_count = pd.read_sql_query(query, conn, params=(start_time, end_time))
+    total_count = total_count["total_count"].iloc[0]
+
+    # 查询用户 GPU 总用量
+    query = """
+        SELECT 
+            user,
+            SUM(gpu_utilization) AS 平均GPU用量,
+            SUM(used_memory) AS 平均显存用量
+        FROM gpu_user_history
+        WHERE timestamp BETWEEN ? AND ?
+        GROUP BY user
+    """
+    data = pd.read_sql_query(query, conn, params=(start_time, end_time))
+    conn.close()
+    logger.trace("Query GPU user history total usage completed")
+
+    # 计算总用量
+    data["平均GPU用量"] = (data["平均GPU用量"] / total_count).round(1)
+    data["平均显存用量"] = (data["平均显存用量"] / 0x40000000 / total_count).round(1)
+
+    return data
