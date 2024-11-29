@@ -36,7 +36,7 @@ def set_filter(driver):
         time.sleep(0.5)
 
     filter_input.click()
-    time.sleep(0.25)
+    time.sleep(0.5)
 
     screenshot(driver)
 
@@ -45,7 +45,7 @@ def set_filter(driver):
         ".ant-select-dropdown.ant-select-dropdown--multiple.ant-select-dropdown-placement-bottomLeft ul.ant-select-dropdown-menu.ant-select-dropdown-menu-root.ant-select-dropdown-menu-vertical > li.ant-select-dropdown-menu-item:nth-child(3)",
     )
     select_item.click()
-    time.sleep(0.25)
+    time.sleep(0.5)
 
     screenshot(driver)
 
@@ -89,7 +89,11 @@ def handle_row(driver, row):
         # 检测是否是正确的页面
         idx = -1
         timestamp = time.time()
-        while driver.current_url.find("notebook/detail") == -1 and (time.time() - timestamp) < 10:
+        while (
+            driver.current_url.find("notebook/detail") == -1
+            and idx > -1 * len(driver.window_handles)
+            and (time.time() - timestamp) < 10
+        ):
             idx -= 1
             driver.switch_to.window(driver.window_handles[idx])
 
@@ -117,7 +121,7 @@ def handle_row(driver, row):
 
         driver.switch_to.window(driver.window_handles[-1])
         idx = -1
-        while driver.current_url.find("notebook/org") == -1:
+        while driver.current_url.find("notebook/org") == -1 and idx > -1 * len(driver.window_handles):
             idx -= 1
             driver.switch_to.window(driver.window_handles[idx])
 

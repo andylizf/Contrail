@@ -36,8 +36,12 @@ data = read_json_result()
 if not data:
     st.info("没有正在运行的任务。")
 
-for _, task in data.items():
+for i, task in data.items():
     # st.markdown("---")
+
+    if not task:
+        st.warning(f"任务 {i}：读取任务信息失败。")
+        continue
 
     basics, times, resources = st.columns([3, 3, 2], vertical_alignment="bottom")
 
