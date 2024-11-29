@@ -5,7 +5,7 @@ import datetime as dt
 import json
 import os
 
-from fee_extractor import NAME_DICT_FEE
+from name_dict import NAME_DICT_FEE
 
 
 def read_json_result(file="data/ai4s_data.json"):

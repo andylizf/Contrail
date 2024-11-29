@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-from fee_extractor import NAME_DICT_FEE
-from GPU_query_db import dict_username
+from name_dict import NAME_DICT_FEE, dict_username
 
 
 @st.cache_data

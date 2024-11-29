@@ -1,7 +1,9 @@
 import pandas as pd
 from datetime import datetime
 import sqlite3
+import sys
 
+sys.path.append(".")
 from name_dict import NAME_DICT_FEE
 
 

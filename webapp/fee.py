@@ -1,7 +1,7 @@
 import streamlit as st
 import plotly.express as px
 
-from fee_extractor import *
+from ai4s.fee_extractor import *
 
 
 DB_PATH = "data/fee.db"

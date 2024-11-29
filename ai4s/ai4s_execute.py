@@ -208,7 +208,7 @@ def execute(target_url):
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--enable-logging")
     chrome_options.add_argument("--auto-open-devtools-for-tabs")
-    service = Service("/home/zzh/others/monitor/chromedriver")
+    service = Service("ai4s/chromedriver")
 
     # 启用 Performance Logging
     chrome_options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
