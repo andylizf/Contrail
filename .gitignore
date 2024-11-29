@@ -1,0 +1,15 @@
+__pycache__/
+
+data/
+
+log/
+
+removed/
+
+screenshots/
+
+*.xlsx
+
+chromedriver
+
+name_dict.py
