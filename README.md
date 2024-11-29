@@ -1,6 +1,6 @@
 # Contrail
 
-Contrail 是一个简单易用的服务器资源和计算平台监控工具。它旨在提供一个高效、直观的监控界面，帮助用户了解被各个系统的实时和历史状态。
+Contrail 是一个简单易用的服务器资源和计算平台监控工具。它旨在提供一个高效、直观的监控界面，帮助用户了解各个系统的实时和历史状态。
 
 ![overview](assets/img/overview_light.png#gh-light-mode-only)
 ![overview](assets/img/overview_dark.png#gh-dark-mode-only)
