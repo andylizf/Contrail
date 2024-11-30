@@ -86,9 +86,9 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Receive GPU information from the client.")
-    parser.add_argument("--ip", type=str, required=True, help="The IP address of the server.", default="0.0.0.0")
-    parser.add_argument("--port", type=int, required=True, help="The port of the server.", default=3334)
-    parser.add_argument("--name", type=str, required=False, help="The device name.", default="virgo")
+    parser.add_argument("--ip", type=str, help="The IP address of the server.", default="0.0.0.0")
+    parser.add_argument("--port", type=int, help="The port of the server.", default=3334)
+    parser.add_argument("--name", type=str, help="The device name.", default="virgo")
     args = parser.parse_args()
 
     logger.add("log/GPU_data_receiver_{time:YYYY-MM-DD}.log", rotation="00:00", retention="7 days", level="TRACE")

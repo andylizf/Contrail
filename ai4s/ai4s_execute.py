@@ -300,11 +300,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", type=str, required=True, help="The target URL")
+    parser.add_argument("--interval", type=int, default=5, help="The interval in minutes")
     args = parser.parse_args()
 
     logger.add("log/ai4s_execute_{time:YYYY-MM-DD}.log", rotation="00:00", retention="7 days", level="TRACE")
     logger.info("Starting scheduled job")
-    schedule.every(15).minutes.do(job, args.url)
+    schedule.every(args.interval).minutes.do(job, args.url)
 
     try:
         # job(args.url)
