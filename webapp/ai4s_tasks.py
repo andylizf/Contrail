@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 import plotly.express as px
 import altair as alt
 import datetime as dt
@@ -32,7 +33,16 @@ def get_data(data, key):
 
 st.title("AI4S: 任务列表")
 
-data = read_json_result()
+col1, col2, col3 = st.columns([4, 11, 1], vertical_alignment="center")
+
+col1.checkbox("自动刷新", key="autorefresh", value=True)
+
+with col3:
+    if st.session_state["autorefresh"]:
+        st_autorefresh(interval=60000, key="ai4s_task_monitor")
+
+with col2:
+    data = read_json_result()
 
 if not data:
     st.info("没有正在运行的任务。")
@@ -73,7 +83,7 @@ for i, task in data.items():
     with gmem:
         timestamps, values = get_data(task["data"], "accelerator_memory_used_bytes")
         values_gb = [x / 1024**3 for x in values]
-        fig = px.line(x=timestamps, y=values)
+        fig = px.line(x=timestamps, y=values_gb)
         fig.update_yaxes(rangemode="tozero")
         fig.update_traces(hovertemplate=None)
         fig.update_layout(
