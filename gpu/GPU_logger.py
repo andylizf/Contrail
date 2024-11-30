@@ -366,10 +366,16 @@ def remove_old_data(timestamp, period_s=3600, db_path="gpu_history.db"):
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Monitor GPU usage of current device.")
+    parser.add_argument("--name", required=True, help="The device name to monitor.", default="leo")
+    args = parser.parse_args()
+
     logger.add("log/GPU_logger_{time:YYYY-MM-DD}.log", rotation="00:00", retention="7 days", level="TRACE")
     logger.info("Starting GPU logger")
-    DB_PATH = "data/gpu_history_leo.db"
-    DB_REALTIME_PATH = "data/gpu_info_leo.db"
+    DB_PATH = f"data/gpu_history_{args.name}.db"
+    DB_REALTIME_PATH = f"data/gpu_info_{args.name}.db"
 
     initialize_database(db_path=DB_PATH)
     initialize_database(db_path=DB_REALTIME_PATH)
