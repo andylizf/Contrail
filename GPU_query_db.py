@@ -1,9 +1,11 @@
 from loguru import logger
+import os
 import sqlite3
 import pandas as pd
 import datetime as dt
 
-from name_dict import dict_username
+if os.getenv("ENABLE_NAME_DICT", "0") == "1":
+    from name_dict import dict_username
 
 
 def query_latest_gpu_info(db_path="gpu_history.db"):

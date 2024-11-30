@@ -118,9 +118,10 @@ def webapp_realtime(hostname="Virgo", db_path="data/gpu_history_virgo.db"):
             user_gpu_df = query_user_gpu_realtime_usage(start_time, end_time, DB_PATH)
             user_gpu_memory_df = query_user_gpu_memory_realtime_usage(start_time, end_time, DB_PATH)
 
-            user_dict = dict_username(DB_PATH)
-            user_gpu_df["user"] = user_gpu_df["user"].map(user_dict)
-            user_gpu_memory_df["user"] = user_gpu_memory_df["user"].map(user_dict)
+            if os.getenv("ENABLE_NAME_DICT", "0") == "1":
+                user_dict = dict_username(DB_PATH)
+                user_gpu_df["user"] = user_gpu_df["user"].apply(lambda x: user_dict.get(x, x))
+                user_gpu_memory_df["user"] = user_gpu_memory_df["user"].apply(lambda x: user_dict.get(x, x))
 
             st.subheader("用户使用率 %")
             chart = (

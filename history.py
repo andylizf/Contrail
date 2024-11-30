@@ -90,7 +90,7 @@ def gpu_chart_user(user_usage_grouped, y_label, name_dict=None):
 
     for i, (user, gpu_data) in enumerate(data.items()):
         color = ",".join([str(int(colors[i][j : j + 2], 16)) for j in (1, 3, 5)])
-        username = name_dict[user] if name_dict is not None else user
+        username = name_dict.get(user, user) if name_dict is not None else user
         fig.add_trace(
             go.Scatter(
                 name=username,
@@ -165,7 +165,7 @@ def gpu_chart_stack(df, y_label, y_max):
     st.plotly_chart(fig, use_container_width=True, key=f"{y_label}_stack")
 
 
-def gpu_cahrt_average(df, y_label, y_max, title, containers):
+def gpu_chart_average(df, y_label, y_max, title, containers):
     containers[0].metric(title, f"{df[y_label].sum():.2f}")
     fig = (
         alt.Chart(df)
@@ -250,8 +250,8 @@ def webapp_history(hostname="Virgo", db_path="data/gpu_history_virgo.db"):
             gpu_avg_fd = query_gpu_history_average_usage(start_time, end_time, DB_PATH)
 
             fig_u, usage, fig_m, mem = st.columns([3, 2, 3, 2], vertical_alignment="bottom")
-            gpu_cahrt_average(gpu_avg_fd, "avg_gpu_utilization", 100, "平均使用率 %", [usage, fig_u])
-            gpu_cahrt_average(gpu_avg_fd, "avg_used_memory", GMEM, "平均显存用量 GB", [mem, fig_m])
+            gpu_chart_average(gpu_avg_fd, "avg_gpu_utilization", 100, "平均使用率 %", [usage, fig_u])
+            gpu_chart_average(gpu_avg_fd, "avg_used_memory", GMEM, "平均显存用量 GB", [mem, fig_m])
 
         select = st.pills(
             "信息选择",
@@ -272,10 +272,14 @@ def webapp_history(hostname="Virgo", db_path="data/gpu_history_virgo.db"):
                 gpu_chart_band(gpu_usage_df, "used_memory")
             elif select == "**用户使用**":
                 user_usage_grouped = query_gpu_user_history_usage(start_time, end_time, DB_PATH, True)
-                name_dict = dict_username(DB_PATH)
+                if os.getenv("ENABLE_NAME_DICT", "0") == "1":
+                    name_dict = dict_username(DB_PATH)
+                else:
+                    name_dict = None
 
                 user_total_df = query_gpu_user_history_total_usage(start_time, end_time, DB_PATH)
-                user_total_df["user"] = user_total_df["user"].map(name_dict)
+                if name_dict is not None:
+                    user_total_df["user"] = user_total_df["user"].apply(lambda x: name_dict.get(x, x))
 
                 st.subheader("用户使用率 %")
                 gpu_chart_user(user_usage_grouped, "gpu_utilization", name_dict)

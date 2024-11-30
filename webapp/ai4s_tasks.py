@@ -5,7 +5,8 @@ import datetime as dt
 import json
 import os
 
-from name_dict import NAME_DICT_FEE
+if os.getenv("ENABLE_NAME_DICT", "0") == "1":
+    from name_dict import NAME_DICT_FEE
 
 
 def read_json_result(file="data/ai4s_data.json"):
@@ -46,7 +47,11 @@ for i, task in data.items():
     basics, times, resources = st.columns([3, 3, 2], vertical_alignment="bottom")
 
     with basics:
-        st.markdown(f"#### {task['task_name']}  \n创建者: **:blue[{NAME_DICT_FEE[task['user']]}]**")
+        if os.getenv("ENABLE_NAME_DICT", "0") == "1":
+            user = NAME_DICT_FEE.get(task["user"], task["user"])
+        else:
+            user = task["user"]
+        st.markdown(f"#### {task['task_name']}  \n创建者: **:blue[{user}]**")
 
     with times:
         st.markdown(f"开始: {task['start_time']}  \n活跃: **{task['active_time']}**")
