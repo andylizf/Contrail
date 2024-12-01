@@ -32,5 +32,15 @@ if not args.disable_info and args.enable_name_dict:
 
 os.environ["ENABLE_NAME_DICT"] = "1" if args.enable_name_dict else "0"
 
+
+st.logo("assets/logo/logo_small.png", size="large")
+
 pg = st.navigation(pages)
 pg.run()
+
+st.html("""<hr style="margin-bottom: 0;">""")
+
+st.caption(
+    """Powered by [**Contrail**<img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/ZZH-qwq/Contrail" height="18" style="margin: -4px 0 0 4px;">](https://github.com/ZZH-qwq/Contrail) / by ZZH-qwq""",
+    unsafe_allow_html=True,
+)
