@@ -33,6 +33,7 @@ if not args.disable_info and args.enable_name_dict:
 os.environ["ENABLE_NAME_DICT"] = "1" if args.enable_name_dict else "0"
 
 
+st.set_page_config(page_icon="assets/logo/favicon.png")
 st.logo("assets/logo/logo_small.png", size="large")
 
 pg = st.navigation(pages)

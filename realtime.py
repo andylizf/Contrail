@@ -44,7 +44,8 @@ def webapp_realtime(hostname="Virgo", db_path="data/gpu_history_virgo.db", confi
         if st.session_state["autorefresh"]:
             st_autorefresh(interval=1000, limit=LIMIT, key=f"gpu_monitor_{hostname}")
 
-    if st.session_state.get(f"gpu_monitor_{hostname}", 0) >= LIMIT - 1:
+    curr_refresh = st.session_state.get(f"gpu_monitor_{hostname}", 0)
+    if curr_refresh is not None and LIMIT is not None and curr_refresh >= LIMIT - 1:
         st.warning(f"标签页长时间未活动，自动刷新已停止：请刷新页面以继续监控。")
 
     # 查询时间范围：过去 30 秒
