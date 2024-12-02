@@ -9,12 +9,8 @@ from GPU_query_db import *
 
 COLOR_SCHEME = px.colors.qualitative.Plotly
 
-DURATION = 30  # 查询时间范围：过去 30 秒
-N_GPU = 8  # GPU 数量
-GMEM = 80  # 显存：80 GB
 
-
-def status_panel(gpu_current_df):
+def status_panel(gpu_current_df, N_GPU=8, GMEM=80):
     for i in range(0, N_GPU, 4):
         cols = st.columns(4)
         for j in range(4):
@@ -30,8 +26,13 @@ def status_panel(gpu_current_df):
                 )
 
 
-def webapp_realtime(hostname="Virgo", db_path="data/gpu_history_virgo.db"):
+def webapp_realtime(hostname="Virgo", db_path="data/gpu_history_virgo.db", config={}):
     DB_PATH = db_path  # 数据库路径
+
+    DURATION = config.get("DURATION", 30)
+    N_GPU = config.get("N_GPU", 8)
+    GMEM = config.get("GMEM", 80)
+    LIMIT = config.get("LIMIT", 1000)
 
     st.title(f"{hostname}: 实时状态")
 
@@ -41,7 +42,10 @@ def webapp_realtime(hostname="Virgo", db_path="data/gpu_history_virgo.db"):
 
     with col3:
         if st.session_state["autorefresh"]:
-            st_autorefresh(interval=1000, key="gpu_monitor_virgo")
+            st_autorefresh(interval=1000, limit=LIMIT, key=f"gpu_monitor_{hostname}")
+
+    if st.session_state.get(f"gpu_monitor_{hostname}", 0) >= LIMIT - 1:
+        st.warning(f"标签页长时间未活动，自动刷新已停止：请刷新页面以继续监控。")
 
     # 查询时间范围：过去 30 秒
     def get_time_range():
@@ -64,7 +68,7 @@ def webapp_realtime(hostname="Virgo", db_path="data/gpu_history_virgo.db"):
     if gpu_utilization_df.empty:
         st.warning(f"过去 {DURATION} 秒内没有 GPU 数据记录：GPU 监控程序可能离线。")
     else:
-        status_panel(gpu_current_df)
+        status_panel(gpu_current_df, N_GPU=N_GPU, GMEM=GMEM)
 
         st.divider()
 
@@ -162,7 +166,7 @@ def webapp_realtime(hostname="Virgo", db_path="data/gpu_history_virgo.db"):
                 .encode(
                     gpu_color,
                     axis_x,
-                    alt.Y("gpu_utilization:Q").title(None).scale(alt.Scale(domain=[0, 800])),
+                    alt.Y("gpu_utilization:Q").title(None).scale(alt.Scale(domain=[0, 100 * N_GPU])),
                     alt.FillOpacityValue(0.5),
                 )
             )
