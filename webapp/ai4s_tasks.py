@@ -69,6 +69,10 @@ for i, task in data.items():
     with resources:
         st.write(f"{task['cpus']} C / {task['memory']}  \n**GPU: {task['gpu_count']}**")
 
+    if "data" not in task:
+        st.warning(f"任务 {task['task_name']}：读取任务数据失败。")
+        continue
+
     gpu, gmem = st.columns(2)
 
     with gpu:
