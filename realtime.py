@@ -48,6 +48,9 @@ def webapp_realtime(hostname="Virgo", db_path="data/gpu_history_virgo.db", confi
     if curr_refresh is not None and LIMIT is not None and curr_refresh >= LIMIT - 1:
         st.warning(f"标签页长时间未活动，自动刷新已停止：请刷新页面以继续监控。")
 
+    if st.session_state.get(f"_selection_realtime_{hostname}", None) is None:
+        st.session_state[f"_selection_realtime_{hostname}"] = "**详细信息**"
+
     # 查询时间范围：过去 30 秒
     def get_time_range():
         end_time = dt.datetime.now(tz=dt.timezone.utc)
@@ -83,10 +86,12 @@ def webapp_realtime(hostname="Virgo", db_path="data/gpu_history_virgo.db", confi
         select = st.pills(
             "信息选择",
             ["**详细信息**", "**用户使用**", "**汇总数据**"],
-            default="**详细信息**",
+            default=st.session_state[f"_selection_realtime_{hostname}"],
             label_visibility="collapsed",
             selection_mode="single",
         )
+
+        st.session_state[f"_selection_realtime_{hostname}"] = select
 
         if select == "**详细信息**":
             gpu_utilization_df = query_gpu_realtime_usage(start_time, end_time, DB_PATH)
