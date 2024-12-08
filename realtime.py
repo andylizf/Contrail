@@ -26,6 +26,14 @@ def status_panel(gpu_current_df, N_GPU=8, GMEM=80):
                 )
 
 
+def store_value(key: str) -> None:
+    st.session_state["_" + key] = st.session_state[key]
+
+
+def load_value(key: str) -> None:
+    st.session_state[key] = st.session_state.get("_" + key, None)
+
+
 def webapp_realtime(hostname="Virgo", db_path="data/gpu_history_virgo.db", config={}):
     DB_PATH = db_path  # 数据库路径
 
@@ -83,15 +91,16 @@ def webapp_realtime(hostname="Virgo", db_path="data/gpu_history_virgo.db", confi
         )
         gpu_color = alt.Color("gpu_index:N").title("GPU").scale(domain=range(N_GPU), range=COLOR_SCHEME)
 
+        load_value(f"selection_realtime_{hostname}")
         select = st.pills(
             "信息选择",
             ["**详细信息**", "**用户使用**", "**汇总数据**"],
-            default=st.session_state[f"_selection_realtime_{hostname}"],
             label_visibility="collapsed",
             selection_mode="single",
+            key=f"selection_realtime_{hostname}",
+            on_change=store_value,
+            args=[f"selection_realtime_{hostname}"],
         )
-
-        st.session_state[f"_selection_realtime_{hostname}"] = select
 
         if select == "**详细信息**":
             gpu_utilization_df = query_gpu_realtime_usage(start_time, end_time, DB_PATH)

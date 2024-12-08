@@ -206,6 +206,14 @@ def get_default_time(db_path):
     return default_start_time, default_end_time, min_time, max_time, latest_timestamp
 
 
+def store_value(key: str) -> None:
+    st.session_state["_" + key] = st.session_state[key]
+
+
+def load_value(key: str) -> None:
+    st.session_state[key] = st.session_state.get("_" + key, None)
+
+
 def webapp_history(hostname="Virgo", db_path="data/gpu_history_virgo.db", config={}):
     DB_PATH = db_path  # 数据库路径
 
@@ -264,15 +272,16 @@ def webapp_history(hostname="Virgo", db_path="data/gpu_history_virgo.db", config
             gpu_chart_average(gpu_avg_fd, "avg_gpu_utilization", 100, "平均使用率 %", [usage, fig_u], N_GPU)
             gpu_chart_average(gpu_avg_fd, "avg_used_memory", GMEM, "平均显存用量 GB", [mem, fig_m], N_GPU)
 
+            load_value(f"selection_history_{hostname}")
             select = st.pills(
                 "信息选择",
                 ["**详细信息**", "**用户使用**", "**汇总数据**"],
-                default=st.session_state[f"_selection_history_{hostname}"],
                 label_visibility="collapsed",
                 selection_mode="single",
+                key=f"selection_history_{hostname}",
+                on_change=store_value,
+                args=[f"selection_history_{hostname}"],
             )
-
-            st.session_state[f"_selection_history_{hostname}"] = select
 
             if select == "**详细信息**":
                 gpu_usage_df = query_gpu_history_usage(start_time, end_time, DB_PATH, True)
