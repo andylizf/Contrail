@@ -280,7 +280,6 @@ def query_gpu_history_usage(
     start_time: str,
     end_time: str,
     db_path: str = "gpu_history.db",
-    use_resample: bool = False,
 ) -> pd.DataFrame:
     """
     查询指定时间范围内的 GPU 使用情况，并进行间隔采样以减小数据量。
@@ -289,7 +288,6 @@ def query_gpu_history_usage(
         start_time (str): 起始时间，格式为 "YYYY-MM-DD HH:MM:SS"。
         end_time (str): 终止时间，格式为 "YYYY-MM-DD HH:MM:SS"。
         db_path (str): SQLite 数据库路径。
-        sample_interval (int): 每个 GPU 的间隔采样数量。
 
     Returns:
         pd.DataFrame: GPU 使用情况。
@@ -438,7 +436,6 @@ def query_gpu_user_history_usage(
     start_time: str,
     end_time: str,
     db_path: str = "gpu_history.db",
-    use_resample: bool = False,
 ) -> tuple[dict, pd.DatetimeIndex]:
     """
     查询指定时间范围内的用户 GPU 使用情况，并进行间隔采样以减小数据量。
@@ -449,7 +446,7 @@ def query_gpu_user_history_usage(
         db_path (str): SQLite 数据库路径。
 
     Returns:
-        pd.DataFrame: 用户 GPU 使用情况。
+        tuple[dict, pd.DatetimeIndex]: 用户 GPU 使用情况和时间索引。
     """
     logger.trace(
         f"Querying GPU user history usage from {start_time} to {end_time} in {db_path}"
@@ -542,9 +539,6 @@ def query_gpu_user_history_usage(
 def query_gpu_user_history_total_usage(
     start_time: str, end_time: str, db_path: str = "gpu_history.db"
 ) -> pd.DataFrame:
-    logger.trace(
-        f"Querying GPU user history total usage from {start_time} to {end_time} in {db_path}"
-    )
     """
     查询指定时间范围内的用户 GPU 总用量。
 
@@ -556,6 +550,9 @@ def query_gpu_user_history_total_usage(
     Returns:
         pd.DataFrame: 用户 GPU 总用量。
     """
+    logger.trace(
+        f"Querying GPU user history total usage from {start_time} to {end_time} in {db_path}"
+    )
     conn = sqlite3.connect(db_path)
 
     # 先查询总的历史记录数量作为总时间
