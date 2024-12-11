@@ -192,9 +192,12 @@ def celi_to_quarter(time):
 
 
 def get_default_time(db_path):
-    # 默认查询时间范围：过去 1 天
+    # 默认查询时间范围：pc - 过去 1 天 / mobile - 过去 6 小时
     max_time = default_end_time = dt.datetime.now()
-    min_time = default_start_time = default_end_time - dt.timedelta(days=1)
+    if st.session_state.is_session_pc:
+        min_time = default_start_time = default_end_time - dt.timedelta(days=1)
+    else:
+        min_time = default_start_time = default_end_time - dt.timedelta(hours=6)
 
     oldest_timestamp, latest_timestamp = query_min_max_timestamp(db_path)
     if oldest_timestamp is not None:

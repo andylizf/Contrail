@@ -2,6 +2,9 @@ import os
 import argparse
 import streamlit as st
 
+from streamlit_javascript import st_javascript
+from user_agents import parse
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--disable_ai4s", action="store_true", help="Disable AI4S monitoring.")
@@ -36,10 +39,28 @@ os.environ["ENABLE_NAME_DICT"] = "1" if args.enable_name_dict else "0"
 st.set_page_config(page_icon="assets/logo/favicon.png")
 st.logo("assets/logo/logo_small.png", size="large")
 
+st.html(
+    """<style>
+    .stElementContainer:has(.stCustomComponentV1),
+    .stElementContainer:has(.stHtml) {
+        position:absolute !important;
+        opacity: 0;
+    }
+    div[data-testid="stSidebarCollapsedControl"] button {
+        margin: -6px 0px -6px -45px;
+        padding: 10px 10px 10px 50px;
+    }
+    </style>"""
+)
+
+ua_string = st_javascript("""window.navigator.userAgent;""", key="ua_string")
+user_agent = parse(ua_string) if ua_string else None
+st.session_state.is_session_pc = user_agent.is_pc if user_agent else True
+
 pg = st.navigation(pages)
 pg.run()
 
-st.html("""<hr style="margin-bottom: 0;">""")
+st.markdown("""<hr style="margin: 10px 0;">""", unsafe_allow_html=True)
 
 st.caption(
     """Powered by [**Contrail**<img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/ZZH-qwq/Contrail" height="18" style="margin: -4px 0 0 4px;">](https://github.com/ZZH-qwq/Contrail) / by ZZH-qwq""",

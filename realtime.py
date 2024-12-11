@@ -42,6 +42,10 @@ def webapp_realtime(hostname="Virgo", db_path="data/gpu_history_virgo.db", confi
     GMEM = config.get("GMEM", 80)
     LIMIT = config.get("LIMIT", 1000)
 
+    not_pc = not st.session_state.get("is_session_pc", True)
+    if not_pc:
+        DURATION = DURATION / 2
+
     st.title(f"{hostname}: 实时状态")
 
     col1, col2, col3 = st.columns([4, 11, 1], vertical_alignment="center")
@@ -90,6 +94,13 @@ def webapp_realtime(hostname="Virgo", db_path="data/gpu_history_virgo.db", confi
             alt.X("timestamp:T").axis(labelSeparation=10).title(None).scale(alt.Scale(domain=(axis_start, axis_end)))
         )
         gpu_color = alt.Color("gpu_index:N").title("GPU").scale(domain=range(N_GPU), range=COLOR_SCHEME)
+        gpu_opacity = alt.Opacity("gpu_index:N").title("GPU")
+        user_color = alt.Color("user:N").title("用户").scale(range=COLOR_SCHEME)
+
+        if not_pc:
+            gpu_color = gpu_color.legend(orient="bottom", titleOrient="left", columns=4)
+            # gpu_opacity = gpu_opacity.legend(orient="bottom", titleOrient="left", columns=4)
+            # user_color = user_color.legend(orient="top", titleOrient="left", columns=4)
 
         load_value(f"selection_realtime_{hostname}")
         select = st.pills(
@@ -147,8 +158,8 @@ def webapp_realtime(hostname="Virgo", db_path="data/gpu_history_virgo.db", confi
                 alt.Chart(user_gpu_df)
                 .mark_area()
                 .encode(
-                    alt.Color("user:N").title("用户").scale(range=COLOR_SCHEME),
-                    alt.Opacity("gpu_index:N").title("GPU"),
+                    user_color,
+                    gpu_opacity,
                     axis_x,
                     alt.Y("gpu_utilization:Q").title(None),
                 )
@@ -161,8 +172,8 @@ def webapp_realtime(hostname="Virgo", db_path="data/gpu_history_virgo.db", confi
                 .transform_calculate(memory="datum.used_memory / 0x40000000")
                 .mark_area()
                 .encode(
-                    alt.Color("user:N").title("用户").scale(range=COLOR_SCHEME),
-                    alt.Opacity("gpu_index:N").title("GPU"),
+                    user_color,
+                    gpu_opacity,
                     axis_x,
                     alt.Y("memory:Q").title(None),
                 )
