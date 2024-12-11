@@ -1,18 +1,17 @@
-import time
+import argparse
 import json
-import os
+import time
 
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.chrome.options import Options
-
-import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--url", type=str, required=True, help="The URL of the target website.")
+parser.add_argument(
+    "--url", type=str, required=True, help="The URL of the target website."
+)
 args = parser.parse_args()
 
 # 设置ChromeDriver
@@ -38,7 +37,9 @@ try:
     login_button.click()
     time.sleep(0.5)
 
-    login_button = driver.find_element(By.CSS_SELECTOR, ".index_login_body__-f1e7 button")
+    login_button = driver.find_element(
+        By.CSS_SELECTOR, ".index_login_body__-f1e7 button"
+    )
     login_button.click()
 
     # switch to login tab

@@ -1,8 +1,12 @@
-import streamlit as st
 import plotly.express as px
+import streamlit as st
 
-from ai4s.fee_extractor import *
-
+from ai4s.fee_extractor import (
+    query_cost_by_date_range,
+    query_cost_by_day_or_month,
+    query_min_max_date,
+    query_total_cost_by_date_range,
+)
 
 DB_PATH = "data/fee.db"
 
@@ -35,7 +39,9 @@ else:
     end_time = end_date.strftime("%Y-%m-%d")
 
     # 显示结果
-    total_cost = query_total_cost_by_date_range(DB_PATH, "fee_data", start_time, end_time)
+    total_cost = query_total_cost_by_date_range(
+        DB_PATH, "fee_data", start_time, end_time
+    )
     st.subheader(f"总费用：{total_cost:.0f} 元")
     st.write(f"查询范围：{start_time} 至 {end_time}")
 

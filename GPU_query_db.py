@@ -1,14 +1,15 @@
-from loguru import logger
+import datetime as dt
 import os
 import sqlite3
+
 import pandas as pd
-import datetime as dt
+from loguru import logger
 
 if os.getenv("ENABLE_NAME_DICT", "0") == "1":
     from name_dict import dict_username
 
 
-def query_latest_gpu_info(db_path="gpu_history.db"):
+def query_latest_gpu_info(db_path: str = "gpu_history.db") -> pd.DataFrame:
     """
     查询最新的 GPU 状态信息（包括 GPU 使用率、内存使用情况等）。
 
@@ -45,7 +46,9 @@ def query_latest_gpu_info(db_path="gpu_history.db"):
     return data
 
 
-def query_min_max_timestamp(db_path="gpu_history.db"):
+def query_min_max_timestamp(
+    db_path: str = "gpu_history.db",
+) -> tuple[dt.datetime, dt.datetime]:
     """
     查询最早和最晚的 GPU 数据记录时间。
 
@@ -73,13 +76,23 @@ def query_min_max_timestamp(db_path="gpu_history.db"):
     if data.empty:
         return None, None
 
-    min_timestamp = pd.to_datetime(data["min_timestamp"].iloc[0]).tz_localize("UTC").tz_convert("Asia/Shanghai")
-    max_timestamp = pd.to_datetime(data["max_timestamp"].iloc[0]).tz_localize("UTC").tz_convert("Asia/Shanghai")
+    min_timestamp = (
+        pd.to_datetime(data["min_timestamp"].iloc[0])
+        .tz_localize("UTC")
+        .tz_convert("Asia/Shanghai")
+    )
+    max_timestamp = (
+        pd.to_datetime(data["max_timestamp"].iloc[0])
+        .tz_localize("UTC")
+        .tz_convert("Asia/Shanghai")
+    )
 
     return min_timestamp, max_timestamp
 
 
-def query_gpu_realtime_usage(start_time, end_time, db_path="gpu_history.db"):
+def query_gpu_realtime_usage(
+    start_time: str, end_time: str, db_path: str = "gpu_history.db"
+) -> pd.DataFrame:
     """
     查询指定时间范围内的 GPU 使用情况。
 
@@ -91,7 +104,9 @@ def query_gpu_realtime_usage(start_time, end_time, db_path="gpu_history.db"):
     Returns:
         gpu_utilization_df: 每台 GPU 在每个时刻的使用率变化。
     """
-    logger.trace(f"Querying GPU realtime usage from {start_time} to {end_time} in {db_path}")
+    logger.trace(
+        f"Querying GPU realtime usage from {start_time} to {end_time} in {db_path}"
+    )
     conn = sqlite3.connect(db_path)
 
     # 查询 GPU 信息
@@ -106,12 +121,18 @@ def query_gpu_realtime_usage(start_time, end_time, db_path="gpu_history.db"):
     logger.trace("Query GPU realtime usage completed")
 
     # 将时间戳转换为 datetime 类型
-    data["timestamp"] = pd.to_datetime(data["timestamp"]).dt.tz_localize("UTC").dt.tz_convert("Asia/Shanghai")
+    data["timestamp"] = (
+        pd.to_datetime(data["timestamp"])
+        .dt.tz_localize("UTC")
+        .dt.tz_convert("Asia/Shanghai")
+    )
 
     return data
 
 
-def query_gpu_memory_realtime_usage(start_time, end_time, db_path="gpu_history.db"):
+def query_gpu_memory_realtime_usage(
+    start_time: str, end_time: str, db_path: str = "gpu_history.db"
+) -> pd.DataFrame:
     """
     查询指定时间范围内的 GPU 内存使用情况。
 
@@ -123,7 +144,9 @@ def query_gpu_memory_realtime_usage(start_time, end_time, db_path="gpu_history.d
     Returns:
         pd.DataFrame: GPU 内存使用情况。
     """
-    logger.trace(f"Querying GPU memory realtime usage from {start_time} to {end_time} in {db_path}")
+    logger.trace(
+        f"Querying GPU memory realtime usage from {start_time} to {end_time} in {db_path}"
+    )
     conn = sqlite3.connect(db_path)
 
     # 查询 GPU 信息
@@ -138,12 +161,18 @@ def query_gpu_memory_realtime_usage(start_time, end_time, db_path="gpu_history.d
     logger.trace("Query GPU memory realtime usage completed")
 
     # 将时间戳转换为 datetime 类型
-    data["timestamp"] = pd.to_datetime(data["timestamp"]).dt.tz_localize("UTC").dt.tz_convert("Asia/Shanghai")
+    data["timestamp"] = (
+        pd.to_datetime(data["timestamp"])
+        .dt.tz_localize("UTC")
+        .dt.tz_convert("Asia/Shanghai")
+    )
 
     return data
 
 
-def query_user_gpu_realtime_usage(start_time, end_time, db_path="gpu_history.db"):
+def query_user_gpu_realtime_usage(
+    start_time: str, end_time: str, db_path: str = "gpu_history.db"
+) -> pd.DataFrame:
     """
     查询指定时间范围内的用户 GPU 使用情况。
 
@@ -155,7 +184,9 @@ def query_user_gpu_realtime_usage(start_time, end_time, db_path="gpu_history.db"
     Returns:
         pd.DataFrame: 用户 GPU 使用情况。
     """
-    logger.trace(f"Querying user GPU realtime usage from {start_time} to {end_time} in {db_path}")
+    logger.trace(
+        f"Querying user GPU realtime usage from {start_time} to {end_time} in {db_path}"
+    )
     conn = sqlite3.connect(db_path)
 
     # 查询用户 GPU 使用情况
@@ -170,12 +201,18 @@ def query_user_gpu_realtime_usage(start_time, end_time, db_path="gpu_history.db"
     logger.trace("Query user GPU realtime usage completed")
 
     # 将时间戳转换为 datetime 类型
-    data["timestamp"] = pd.to_datetime(data["timestamp"]).dt.tz_localize("UTC").dt.tz_convert("Asia/Shanghai")
+    data["timestamp"] = (
+        pd.to_datetime(data["timestamp"])
+        .dt.tz_localize("UTC")
+        .dt.tz_convert("Asia/Shanghai")
+    )
 
     return data
 
 
-def query_user_gpu_memory_realtime_usage(start_time, end_time, db_path="gpu_history.db"):
+def query_user_gpu_memory_realtime_usage(
+    start_time: str, end_time: str, db_path: str = "gpu_history.db"
+) -> pd.DataFrame:
     """
     查询指定时间范围内的用户 GPU 内存使用情况。
 
@@ -187,7 +224,9 @@ def query_user_gpu_memory_realtime_usage(start_time, end_time, db_path="gpu_hist
     Returns:
         pd.DataFrame: 用户 GPU 内存使用情况。
     """
-    logger.trace(f"Querying user GPU memory realtime usage from {start_time} to {end_time} in {db_path}")
+    logger.trace(
+        f"Querying user GPU memory realtime usage from {start_time} to {end_time} in {db_path}"
+    )
     conn = sqlite3.connect(db_path)
 
     # 查询用户 GPU 使用情况
@@ -202,12 +241,16 @@ def query_user_gpu_memory_realtime_usage(start_time, end_time, db_path="gpu_hist
     logger.trace("Query user GPU memory realtime usage completed")
 
     # 将时间戳转换为 datetime 类型
-    data["timestamp"] = pd.to_datetime(data["timestamp"]).dt.tz_localize("UTC").dt.tz_convert("Asia/Shanghai")
+    data["timestamp"] = (
+        pd.to_datetime(data["timestamp"])
+        .dt.tz_localize("UTC")
+        .dt.tz_convert("Asia/Shanghai")
+    )
 
     return data
 
 
-def get_period_sample_interval(start_time, end_time):
+def get_period_sample_interval(start_time: str, end_time: str) -> int:
     """
     获取指定时间段的采样间隔。
 
@@ -233,7 +276,12 @@ def get_period_sample_interval(start_time, end_time):
     return interval
 
 
-def query_gpu_history_usage(start_time, end_time, db_path="gpu_history.db", use_resample=False):
+def query_gpu_history_usage(
+    start_time: str,
+    end_time: str,
+    db_path: str = "gpu_history.db",
+    use_resample: bool = False,
+) -> pd.DataFrame:
     """
     查询指定时间范围内的 GPU 使用情况，并进行间隔采样以减小数据量。
 
@@ -246,7 +294,9 @@ def query_gpu_history_usage(start_time, end_time, db_path="gpu_history.db", use_
     Returns:
         pd.DataFrame: GPU 使用情况。
     """
-    logger.trace(f"Querying GPU history usage from {start_time} to {end_time} in {db_path}")
+    logger.trace(
+        f"Querying GPU history usage from {start_time} to {end_time} in {db_path}"
+    )
     conn = sqlite3.connect(db_path)
 
     # 根据时间段计算采样间隔
@@ -279,7 +329,11 @@ def query_gpu_history_usage(start_time, end_time, db_path="gpu_history.db", use_
     logger.trace("Query GPU history usage completed")
 
     # 将时间戳转换为 datetime 类型
-    data["timestamp"] = pd.to_datetime(data["aligned_timestamp"]).dt.tz_localize("UTC").dt.tz_convert("Asia/Shanghai")
+    data["timestamp"] = (
+        pd.to_datetime(data["aligned_timestamp"])
+        .dt.tz_localize("UTC")
+        .dt.tz_convert("Asia/Shanghai")
+    )
 
     # if use_resample and len(data) > 500:
     #     freq = len(data) // 36 + 1
@@ -309,7 +363,9 @@ def query_gpu_history_usage(start_time, end_time, db_path="gpu_history.db", use_
     return data
 
 
-def query_gpu_history_average_usage(start_time, end_time, db_path="gpu_history.db"):
+def query_gpu_history_average_usage(
+    start_time: str, end_time: str, db_path: str = "gpu_history.db"
+) -> pd.DataFrame:
     """
     查询指定时间范围内的 GPU 平均使用情况。
 
@@ -321,7 +377,9 @@ def query_gpu_history_average_usage(start_time, end_time, db_path="gpu_history.d
     Returns:
         pd.DataFrame: GPU 平均使用情况。
     """
-    logger.trace(f"Querying GPU history average usage from {start_time} to {end_time} in {db_path}")
+    logger.trace(
+        f"Querying GPU history average usage from {start_time} to {end_time} in {db_path}"
+    )
     conn = sqlite3.connect(db_path)
 
     # 查询 GPU 信息
@@ -344,7 +402,9 @@ def query_gpu_history_average_usage(start_time, end_time, db_path="gpu_history.d
     return data
 
 
-def query_gpu_user_history_list(start_time, end_time, db_path="gpu_history.db"):
+def query_gpu_user_history_list(
+    start_time: str, end_time: str, db_path: str = "gpu_history.db"
+) -> pd.DataFrame:
     """
     查询指定时间范围内的用户列表。
 
@@ -356,7 +416,9 @@ def query_gpu_user_history_list(start_time, end_time, db_path="gpu_history.db"):
     Returns:
         pd.DataFrame: 用户列表。
     """
-    logger.trace(f"Querying GPU user history list from {start_time} to {end_time} in {db_path}")
+    logger.trace(
+        f"Querying GPU user history list from {start_time} to {end_time} in {db_path}"
+    )
     conn = sqlite3.connect(db_path)
 
     # 查询用户列表
@@ -372,7 +434,12 @@ def query_gpu_user_history_list(start_time, end_time, db_path="gpu_history.db"):
     return data
 
 
-def query_gpu_user_history_usage(start_time, end_time, db_path="gpu_history.db", use_resample=False):
+def query_gpu_user_history_usage(
+    start_time: str,
+    end_time: str,
+    db_path: str = "gpu_history.db",
+    use_resample: bool = False,
+) -> tuple[dict, pd.DatetimeIndex]:
     """
     查询指定时间范围内的用户 GPU 使用情况，并进行间隔采样以减小数据量。
 
@@ -384,7 +451,9 @@ def query_gpu_user_history_usage(start_time, end_time, db_path="gpu_history.db",
     Returns:
         pd.DataFrame: 用户 GPU 使用情况。
     """
-    logger.trace(f"Querying GPU user history usage from {start_time} to {end_time} in {db_path}")
+    logger.trace(
+        f"Querying GPU user history usage from {start_time} to {end_time} in {db_path}"
+    )
     conn = sqlite3.connect(db_path)
 
     # 根据时间段计算采样间隔
@@ -413,7 +482,11 @@ def query_gpu_user_history_usage(start_time, end_time, db_path="gpu_history.db",
     logger.trace("Query GPU user history usage completed")
 
     # 将时间戳转换为 datetime 类型
-    data["timestamp"] = pd.to_datetime(data["aligned_timestamp"]).dt.tz_localize("UTC").dt.tz_convert("Asia/Shanghai")
+    data["timestamp"] = (
+        pd.to_datetime(data["aligned_timestamp"])
+        .dt.tz_localize("UTC")
+        .dt.tz_convert("Asia/Shanghai")
+    )
     max_time = data["timestamp"].max()
     min_time = data["timestamp"].min()
 
@@ -442,22 +515,36 @@ def query_gpu_user_history_usage(start_time, end_time, db_path="gpu_history.db",
         end_time = group["timestamp"].max()
 
         full_time_range = pd.date_range(
-            start=min_time - pd.Timedelta(seconds=interval) if min_time > start_time else min_time,
-            end=end_time + pd.Timedelta(seconds=interval) if end_time < max_time else end_time,
+            start=min_time - pd.Timedelta(seconds=interval)
+            if min_time > start_time
+            else min_time,
+            end=end_time + pd.Timedelta(seconds=interval)
+            if end_time < max_time
+            else end_time,
             freq=f"{interval}s",
         )
-        group = group.set_index("timestamp").reindex(full_time_range, fill_value=0).reset_index()
+        group = (
+            group.set_index("timestamp")
+            .reindex(full_time_range, fill_value=0)
+            .reset_index()
+        )
         group.rename(columns={"index": "timestamp"}, inplace=True)
 
         if user not in user_gpu_history:
             user_gpu_history[user] = {}
         user_gpu_history[user][gpu_index] = group
 
-    return user_gpu_history, pd.date_range(start=min_time, end=max_time, freq=f"{interval}s")
+    return user_gpu_history, pd.date_range(
+        start=min_time, end=max_time, freq=f"{interval}s"
+    )
 
 
-def query_gpu_user_history_total_usage(start_time, end_time, db_path="gpu_history.db"):
-    logger.trace(f"Querying GPU user history total usage from {start_time} to {end_time} in {db_path}")
+def query_gpu_user_history_total_usage(
+    start_time: str, end_time: str, db_path: str = "gpu_history.db"
+) -> pd.DataFrame:
+    logger.trace(
+        f"Querying GPU user history total usage from {start_time} to {end_time} in {db_path}"
+    )
     """
     查询指定时间范围内的用户 GPU 总用量。
 

@@ -1,27 +1,28 @@
-from loguru import logger
 import json
 import time
 
+import schedule
+from loguru import logger
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.chrome.options import Options
-import schedule
 
 # Cookie文件路径
 COOKIE_FILE = "data/cookies.txt"
 
 
-def screenshot(driver, filename="screenshots/body.png"):
+def screenshot(
+    driver: webdriver.Chrome, filename: str = "screenshots/body.png"
+) -> None:
     # logger.trace(f"Taking screenshot: {filename}")
     # body = driver.find_element(By.XPATH, "/html/body")
     # body.screenshot(filename)
     pass
 
 
-def set_filter(driver):
+def set_filter(driver: webdriver.Chrome) -> None:
     logger.trace("Setting filter")
     filter_input = None
 
@@ -59,7 +60,7 @@ def set_filter(driver):
     screenshot(driver)
 
 
-def handle_row(driver, row):
+def handle_row(driver: webdriver.Chrome, row: WebElement) -> dict:
     logger.trace("Handling row")
     task = {}
 
@@ -70,7 +71,9 @@ def handle_row(driver, row):
         active_time = row.find_element(By.CSS_SELECTOR, "td:nth-child(5)").text
         task["active_time"] = active_time
 
-        resource = row.find_element(By.CSS_SELECTOR, "td:nth-child(6)").text.replace("\n", " ")
+        resource = row.find_element(By.CSS_SELECTOR, "td:nth-child(6)").text.replace(
+            "\n", " "
+        )
 
         task["cpus"] = resource.split(" ")[0].split("：")[1]
         task["gpu_type"] = resource.split("：")[2].split(" / ")[0]
@@ -82,7 +85,9 @@ def handle_row(driver, row):
         logger.info(f"Task: {task_name}, User: {user}")
         logger.info(f"Resource: {resource}")
 
-        view_button = row.find_element(By.CSS_SELECTOR, "td:last-child > div > .table-action:nth-child(1)")
+        view_button = row.find_element(
+            By.CSS_SELECTOR, "td:last-child > div > .table-action:nth-child(1)"
+        )
         view_button.send_keys(Keys.CONTROL + Keys.RETURN)
         driver.switch_to.window(driver.window_handles[-1])
 
@@ -121,7 +126,9 @@ def handle_row(driver, row):
 
         driver.switch_to.window(driver.window_handles[-1])
         idx = -1
-        while driver.current_url.find("notebook/org") == -1 and idx > -1 * len(driver.window_handles):
+        while driver.current_url.find("notebook/org") == -1 and idx > -1 * len(
+            driver.window_handles
+        ):
             idx -= 1
             driver.switch_to.window(driver.window_handles[idx])
 
@@ -134,10 +141,12 @@ def handle_row(driver, row):
         return None
 
 
-def close_row(driver, row):
+def close_row(driver: webdriver.Chrome, row: WebElement) -> None:
     logger.trace("Closing row")
     try:
-        close_button = row.find_element(By.CSS_SELECTOR, "td:last-child > div > .table-action:nth-child(4)")
+        close_button = row.find_element(
+            By.CSS_SELECTOR, "td:last-child > div > .table-action:nth-child(4)"
+        )
         close_button.click()
         time.sleep(1)
 
@@ -152,7 +161,7 @@ def close_row(driver, row):
         logger.error(f"Error closing row: {e}")
 
 
-def check_respond(driver, timeout=10):
+def check_respond(driver: webdriver.Chrome, timeout: int = 10) -> dict:
     logger.trace("Checking response")
     data = {}
 
@@ -177,7 +186,9 @@ def check_respond(driver, timeout=10):
                 request_id = log["params"]["requestId"]
 
                 # 使用 DevTools 获取响应体
-                response_body = driver.execute_cdp_cmd("Network.getResponseBody", {"requestId": request_id})
+                response_body = driver.execute_cdp_cmd(
+                    "Network.getResponseBody", {"requestId": request_id}
+                )
                 body_data = response_body.get("body", "")
 
                 if response_body:
@@ -185,16 +196,25 @@ def check_respond(driver, timeout=10):
                         # 将解码后的字符串转换为 JSON 格式
                         json_data = json.loads(body_data)
 
-                        query_string = json_data["results"]["A"]["frames"][0]["schema"]["meta"]["executedQueryString"]
+                        query_string = json_data["results"]["A"]["frames"][0]["schema"][
+                            "meta"
+                        ]["executedQueryString"]
 
                         if "container_accelerator_duty_cycle" in query_string:
-                            data["accelerator_duty_cycle"] = json_data["results"]["A"]["frames"][0]["data"]
+                            data["accelerator_duty_cycle"] = json_data["results"]["A"][
+                                "frames"
+                            ][0]["data"]
                         elif "container_accelerator_memory_used_bytes" in query_string:
-                            data["accelerator_memory_used_bytes"] = json_data["results"]["A"]["frames"][0]["data"]
+                            data["accelerator_memory_used_bytes"] = json_data[
+                                "results"
+                            ]["A"]["frames"][0]["data"]
                         else:
                             continue
 
-                        if "accelerator_duty_cycle" in data and "accelerator_memory_used_bytes" in data:
+                        if (
+                            "accelerator_duty_cycle" in data
+                            and "accelerator_memory_used_bytes" in data
+                        ):
                             return data
 
                     except json.JSONDecodeError as e:
@@ -205,7 +225,7 @@ def check_respond(driver, timeout=10):
     return None
 
 
-def execute(target_url):
+def execute(target_url: str) -> dict:
     logger.info("Executing main function")
     # 设置ChromeDriver
     chrome_options = Options()
@@ -259,13 +279,19 @@ def execute(target_url):
         set_filter(driver)
 
         # 如果 .mf-notebook-list .ant-table-default .ant-table-placeholder 存在，则说明没有数据
-        if driver.find_elements(By.CSS_SELECTOR, ".mf-notebook-list .ant-table-default .ant-table-placeholder"):
+        if driver.find_elements(
+            By.CSS_SELECTOR,
+            ".mf-notebook-list .ant-table-default .ant-table-placeholder",
+        ):
             logger.info("No data found")
             return {}
 
         else:
             data = {}
-            rows = driver.find_elements(By.CSS_SELECTOR, ".mf-notebook-list .ant-table-tbody .ant-table-row-level-0")
+            rows = driver.find_elements(
+                By.CSS_SELECTOR,
+                ".mf-notebook-list .ant-table-tbody .ant-table-row-level-0",
+            )
 
             for i, row in enumerate(rows):
                 task = handle_row(driver, row)
@@ -286,13 +312,15 @@ def execute(target_url):
         driver.quit()
 
 
-def job(target_url):
+def job(target_url: str) -> None:
     logger.info("Starting job")
     data = execute(target_url)
     if data is not None:
         with open("data/ai4s_data.json", "w") as file:
             json.dump(data, file, ensure_ascii=False, indent=4)
-    logger.info(f"Job completed at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}")
+    logger.info(
+        f"Job completed at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}"
+    )
 
 
 if __name__ == "__main__":
@@ -300,10 +328,17 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", type=str, required=True, help="The target URL")
-    parser.add_argument("--interval", type=int, default=5, help="The interval in minutes")
+    parser.add_argument(
+        "--interval", type=int, default=5, help="The interval in minutes"
+    )
     args = parser.parse_args()
 
-    logger.add("log/ai4s_execute_{time:YYYY-MM-DD}.log", rotation="00:00", retention="7 days", level="TRACE")
+    logger.add(
+        "log/ai4s_execute_{time:YYYY-MM-DD}.log",
+        rotation="00:00",
+        retention="7 days",
+        level="TRACE",
+    )
     logger.info("Starting scheduled job")
     schedule.every(args.interval).minutes.do(job, args.url)
 

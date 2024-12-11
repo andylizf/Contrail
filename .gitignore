@@ -13,3 +13,5 @@ screenshots/
 chromedriver
 
 name_dict.py
+
+.venv/

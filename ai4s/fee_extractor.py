@@ -1,8 +1,9 @@
-import pandas as pd
-from datetime import datetime
+import os
 import sqlite3
 import sys
-import os
+from datetime import datetime
+
+import pandas as pd
 
 if os.getenv("ENABLE_NAME_DICT", "0") == "1":
     sys.path.append(".")
@@ -11,7 +12,9 @@ else:
     NAME_DICT_FEE = {}
 
 
-def extract_and_save_to_db(file_path, db_path, table_name, if_exists="replace"):
+def extract_and_save_to_db(
+    file_path: str, db_path: str, table_name: str, if_exists: str = "replace"
+) -> None:
     """
     从 Excel 文件中提取指定信息，并保存到 SQLite 数据库。
 
@@ -34,7 +37,9 @@ def extract_and_save_to_db(file_path, db_path, table_name, if_exists="replace"):
     # result["资源使用人员"] = result["资源使用人员"].replace("--", "pfs")
 
     # 替换人员名称
-    result["资源使用人员"] = result["资源使用人员"].apply(lambda x: NAME_DICT_FEE.get(x, x))
+    result["资源使用人员"] = result["资源使用人员"].apply(
+        lambda x: NAME_DICT_FEE.get(x, x)
+    )
 
     # 将“扣费时间”转换为 SQLite DATETIME 格式
     # result["扣费时间"] = pd.to_datetime(result["扣费时间"]).dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -48,14 +53,16 @@ def extract_and_save_to_db(file_path, db_path, table_name, if_exists="replace"):
     # 为表添加索引（提高查询效率）
     cursor = conn.cursor()
     cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_time ON {table_name} (扣费时间);")
-    cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_user ON {table_name} (资源使用人员);")
+    cursor.execute(
+        f"CREATE INDEX IF NOT EXISTS idx_user ON {table_name} (资源使用人员);"
+    )
 
     # 关闭数据库连接
     conn.commit()
     conn.close()
 
 
-def query_min_max_date(db_path, table_name):
+def query_min_max_date(db_path: str, table_name: str) -> tuple[datetime, datetime]:
     """
     查询最早和最晚的扣费日期。
 
@@ -80,7 +87,9 @@ def query_min_max_date(db_path, table_name):
     return min_date, max_date
 
 
-def query_total_cost_by_date_range(db_path, table_name, start_date, end_date):
+def query_total_cost_by_date_range(
+    db_path: str, table_name: str, start_date: str, end_date: str
+) -> float:
     """
     按日期范围查询总扣费金额。
 
@@ -100,13 +109,17 @@ def query_total_cost_by_date_range(db_path, table_name, start_date, end_date):
         FROM {table_name}
         WHERE 扣费时间 BETWEEN ? AND ?
     """
-    df = pd.read_sql_query(query, conn, params=(start_date + " 00:00:00", end_date + " 23:59:59"))
+    df = pd.read_sql_query(
+        query, conn, params=(start_date + " 00:00:00", end_date + " 23:59:59")
+    )
     total_cost = df["总消费金额"].iloc[0]
     conn.close()
     return total_cost
 
 
-def query_cost_by_date_range(db_path, table_name, start_date, end_date):
+def query_cost_by_date_range(
+    db_path: str, table_name: str, start_date: str, end_date: str
+) -> tuple[float, pd.DataFrame]:
     """
     按日期范围查询总扣费情况。
 
@@ -130,12 +143,16 @@ def query_cost_by_date_range(db_path, table_name, start_date, end_date):
         GROUP BY 资源使用人员
         ORDER BY 总消费金额 DESC
     """
-    df = pd.read_sql_query(query, conn, params=(start_date + " 00:00:00", end_date + " 23:59:59"))
+    df = pd.read_sql_query(
+        query, conn, params=(start_date + " 00:00:00", end_date + " 23:59:59")
+    )
     conn.close()
     return df
 
 
-def query_cost_by_day_or_month(db_path, table_name, start_date, end_date, group_by="day"):
+def query_cost_by_day_or_month(
+    db_path: str, table_name: str, start_date: str, end_date: str, group_by: str = "day"
+) -> pd.DataFrame:
     """
     按天或按月统计每位用户的扣费情况。
 
@@ -177,15 +194,17 @@ def query_cost_by_day_or_month(db_path, table_name, start_date, end_date, group_
     else:
         raise ValueError("group_by 参数必须为 'day' 或 'month'。")
 
-    df = pd.read_sql_query(query, conn, params=(start_date + " 00:00:00", end_date + " 23:59:59"))
+    df = pd.read_sql_query(
+        query, conn, params=(start_date + " 00:00:00", end_date + " 23:59:59")
+    )
 
     conn.close()
     return df
 
 
-def generate_data(db_path, table_name, count=1000):
-    import random
+def generate_data(db_path: str, table_name: str, count: int = 1000) -> None:
     import datetime
+    import random
 
     users = ["Alice", "Bob", "Charlie", "David", "Eve"]
     weights = [0.1, 0.2, 0.3, 0.25, 0.15]
@@ -195,14 +214,19 @@ def generate_data(db_path, table_name, count=1000):
     start_date = datetime.datetime(2020, 1, 1)
     end_date = datetime.datetime(2024, 1, 1)
     periods = int((end_date - start_date).total_seconds())
-    timestamps = [start_date + datetime.timedelta(seconds=random.randint(0, periods)) for _ in range(count)]
+    timestamps = [
+        start_date + datetime.timedelta(seconds=random.randint(0, periods))
+        for _ in range(count)
+    ]
 
     # 随机生成count个用户、任务和金额
     data = {
         "扣费时间": timestamps,
         "任务名称": [random.choice(tasks) for _ in range(count)],
         "资源使用人员": [random.choice(users) for _ in range(count)],
-        "资源使用人员": [random.choices(users, weights=weights, k=1)[0] for _ in range(count)],
+        "资源使用人员": [
+            random.choices(users, weights=weights, k=1)[0] for _ in range(count)
+        ],
         "消费金额": [random.uniform(1, 100) for _ in range(count)],
     }
 
@@ -213,11 +237,15 @@ def generate_data(db_path, table_name, count=1000):
 
     cursor = conn.cursor()
     cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_time ON {table_name} (扣费时间);")
-    cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_user ON {table_name} (资源使用人员);")
+    cursor.execute(
+        f"CREATE INDEX IF NOT EXISTS idx_user ON {table_name} (资源使用人员);"
+    )
 
     conn.commit()
     conn.close()
 
 
 if __name__ == "__main__":
-    extract_and_save_to_db("DeductRecords_2024_11_22_235723.xlsx", "data/fee.db", "fee_data")
+    extract_and_save_to_db(
+        "DeductRecords_2024_11_22_235723.xlsx", "data/fee.db", "fee_data"
+    )

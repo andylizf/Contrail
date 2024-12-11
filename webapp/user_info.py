@@ -1,11 +1,10 @@
-import streamlit as st
 import pandas as pd
-
+import streamlit as st
 from name_dict import NAME_DICT_FEE, dict_username
 
 
 @st.cache_data
-def convert_dict_to_df(dict_data):
+def convert_dict_to_df(dict_data: dict) -> pd.DataFrame:
     """
     将字典转换为 DataFrame。
     """
@@ -15,7 +14,7 @@ def convert_dict_to_df(dict_data):
 
 
 @st.cache_data
-def search_user(hostname, input=""):
+def search_user(hostname: str, input: str = "") -> pd.DataFrame:
     """
     查询用户信息。
     """
@@ -24,7 +23,9 @@ def search_user(hostname, input=""):
         "virgo": dict_username("virgo.db"),
         "ai4s": NAME_DICT_FEE,
     }
-    user_df = pd.DataFrame.from_dict(dict_host[hostname], orient="index", columns=["用户信息"])
+    user_df = pd.DataFrame.from_dict(
+        dict_host[hostname], orient="index", columns=["用户信息"]
+    )
     user_df.index.name = "用户名"
 
     if input == "":
